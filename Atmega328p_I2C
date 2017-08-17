@@ -26,6 +26,7 @@
 #define SCL 0x04	//D2	PORTD
 
 uint8_t buffer[10];
+uint8_t index = 0;
 void PORT_Init()
 {
 	DDRB |= SDA;
@@ -110,6 +111,8 @@ void I2C_Write(uint8_t addr)
 }
 void I2C_Read()
 {
+	index%=10;
+	
 	uint8_t tmp,tmpData=0;
 	DDRB = 0x00;
 	PORTB = SDA;
@@ -134,7 +137,7 @@ void I2C_Read()
 	_delay_ms(1);
 	PORTD = 0x00;
 	_delay_ms(1);
-	buffer[0] = tmpData;
+	buffer[index++] = tmpData;
 }
 int main(void)
 {
@@ -146,13 +149,22 @@ int main(void)
 	UART_Init();
 	uint8_t data;
 	/* Replace with your application code */
-    	I2C_START();
-    	I2C_Write(0b10100011);
-    	I2C_Read();
-    	I2C_STOP();
+    
 	while (1) 
     {
-		UART_Write(buffer[0]);
+		for(int i=0;i<10;i++)
+		{
+			I2C_START();
+			I2C_Write(0xa3);
+			I2C_Read();
+			I2C_STOP();
+		
+			UART_Write(65+i);
+			UART_Write(':');
+			UART_Write(buffer[i]);
+			UART_Write('\n');
+		}
+		_delay_ms(5000);
     }
 }
 
