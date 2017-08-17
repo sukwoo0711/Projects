@@ -1,0 +1,65 @@
+/*
+ * Atmega328p.c
+ *
+ * Created: 2017-08-17 오후 9:20:14
+ * Author : swpark
+ */ 
+/*
+		#========================================================================#
+		#								:: Pin mapping ::						 #
+		#========================================================================#
+		#			PB0		D8				PC0		A0			PD0		D0		 #
+		#			PB1		D9				PC1		A1			PD1		D1		 #
+		#			PB2		D10				PC2		A2			PD2		D2		 #
+		#			PB3		D11				PC3		A3			PD3		D3		 #
+		#			PB4		D12				PC4		A4			PD4		D4		 #
+		#			PB5		D13				PC5		A5			PD5		D5		 #
+		#			PB6		XTAL			PC6		RST			PD6		D6		 #
+		#			PB7		XTAL								PD7		D7		 #
+		#========================================================================#
+*/
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <util/delay.h>
+
+#define SDA	0x01	//D8	PORTB
+#define SCL 0x04	//D2	PORTD
+
+void PORT_Init()
+{
+	DDRB |= SDA;
+	PORTB |= SCL;
+}
+void UART_Init()
+{
+	UCSR0A |= (1<<U2X0);
+	UBRR0H = 0;
+	UBRR0L = 207;
+	
+	UCSR0C |= 0x06;
+	
+	UCSR0B |= (1<<RXEN0) | (1<<TXEN0);
+}
+uint8_t UART_Read()
+{
+	while(!(UCSR0A&(1<<RXC0)));
+	return UDR0;
+}
+void UART_Write(uint8_t arg)
+{
+	while(!(UCSR0A & (1<<UDRE0)));
+	UDR0 = arg;
+}
+int main(void)
+{
+	PORT_Init();
+	UART_Init();
+	uint8_t data;
+	/* Replace with your application code */
+    while (1) 
+    {
+			data = UART_Read();
+			UART_Write(data);
+    }
+}
+
