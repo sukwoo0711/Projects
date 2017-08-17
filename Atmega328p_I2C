@@ -1,0 +1,158 @@
+/*
+ * Atmega328p.c
+ *
+ * Created: 2017-08-17 오후 9:20:14
+ * Author : swpark
+ */ 
+/*
+		#========================================================================#
+		#								:: Pin mapping ::						 #
+		#========================================================================#
+		#			PB0		D8				PC0		A0			PD0		D0		 #
+		#			PB1		D9				PC1		A1			PD1		D1		 #
+		#			PB2		D10				PC2		A2			PD2		D2		 #
+		#			PB3		D11				PC3		A3			PD3		D3		 #
+		#			PB4		D12				PC4		A4			PD4		D4		 #
+		#			PB5		D13				PC5		A5			PD5		D5		 #
+		#			PB6		XTAL			PC6		RST			PD6		D6		 #
+		#			PB7		XTAL								PD7		D7		 #
+		#========================================================================#
+*/
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <util/delay.h>
+
+#define SDA	0x01	//D8	PORTB
+#define SCL 0x04	//D2	PORTD
+
+uint8_t buffer[10];
+void PORT_Init()
+{
+	DDRB |= SDA;
+	PORTD |= SCL;
+}
+void UART_Init()
+{
+	UCSR0A |= (1<<U2X0);
+	UBRR0H = 0;
+	UBRR0L = 207;
+	
+	UCSR0C |= 0x06;
+	
+	UCSR0B |= (1<<RXEN0) | (1<<TXEN0);
+}
+uint8_t UART_Read()
+{
+	while(!(UCSR0A&(1<<RXC0)));
+	return UDR0;
+}
+void UART_Write(uint8_t arg)
+{
+	while(!(UCSR0A & (1<<UDRE0)));
+	UDR0 = arg;
+}
+void I2C_START()
+{
+	DDRB = SDA;
+	DDRD = SCL;
+	
+	//SCL, SDA HIGH
+	PORTB = SDA;
+	PORTD = SCL;
+	_delay_ms(1);
+	//SDA LOW
+	PORTB = 0x00;
+	_delay_ms(1);
+	//SCL LOW
+	PORTD = 0x00;
+}
+void I2C_STOP()
+{
+	DDRB = SDA;
+	DDRD = SCL;
+	
+	PORTB = 0x00;
+	PORTD = 0x00;
+	_delay_ms(1);
+	//SCL HIGH
+	PORTD = SCL;
+	_delay_ms(1);
+	//SDA HIGH
+	PORTB = SDA;
+}
+void I2C_Write(uint8_t addr)
+{
+	uint8_t tmp=addr;
+	for(int i=0;i<8;i++)
+	{
+		tmp = addr;
+		tmp << i;
+		tmp = tmp & 0x80;
+		if(tmp == 0x80)
+		{
+			PORTB = SDA;	//High send
+		}
+		else
+		{
+			PORTB = 0x00;	//Low send
+		}
+		//Clocking
+		_delay_ms(1);
+		PORTD = SCL;
+		_delay_ms(1);
+		PORTD = 0x00;
+	}
+	//For Acksignal;
+	_delay_ms(1);
+	PORTD = SCL;
+	_delay_ms(1);
+	PORTD = 0x00;
+}
+void I2C_Read()
+{
+	uint8_t tmp,tmpData=0;
+	DDRB = 0x00;
+	PORTB = SDA;
+	for(int i=0;i<8;i++)
+	{
+		_delay_ms(1);
+		PORTD = SCL;
+		_delay_ms(1);
+		tmp = (PINB & SDA);
+		tmp = tmp & 0x01;
+		if(tmp == 0x01)
+			tmpData = tmpData|0x01;
+		else
+			tmpData = tmpData&0xfe;
+		tmpData = tmpData<<i;
+		PORTD = 0x00;
+	}
+	DDRB = SDA;
+	PORTB = SDA;
+	_delay_ms(1);
+	PORTD = SCL;
+	_delay_ms(1);
+	PORTD = 0x00;
+	_delay_ms(1);
+	buffer[0] = tmpData;
+}
+int main(void)
+{
+	/*
+		* Write 0
+		* Read 1
+	*/
+	PORT_Init();
+	UART_Init();
+	uint8_t data;
+	/* Replace with your application code */
+    	I2C_START();
+    	I2C_Write(0b10100011);
+    	I2C_Read();
+    	I2C_STOP();
+	while (1) 
+    {
+		UART_Write(buffer[0]);
+    }
+}
+
