@@ -1,0 +1,127 @@
+#include <stdio.h>
+#define MAX 10000;
+#define MOD 10000;
+typedef struct Node {
+	char key[33];
+	char value[33];
+}node;
+node ht[100000];
+node emptyNode;
+unsigned int hash(char* msg)
+{
+	unsigned int hashedItem = 0;
+	int c = 0;
+	while (c = *msg++)
+	{
+		hashedItem = (((hashedItem) << 5) + hashedItem) + c % MAX;
+	}
+	return hashedItem%MAX;
+}
+void strCpy(char dst[], char src[])
+{
+	int i = 0;
+	while (src[i])
+	{
+		dst[i] = src[i];
+		i++;
+	}
+}
+int strCmp(char dst[], char src[])
+{
+	int res = 1;
+	int i = 0;
+	while (src[i])
+	{
+		if (dst[i] != src[i])
+			res = 0;
+		i++;
+	}
+	return res;
+}
+void add(unsigned int hashKey, char key[], char value[])
+{
+	int count = 10000;
+	while (count-- && ht[hashKey].key[0] != 0)
+	{
+		//ht가 빌때까지 계속 내려감.
+		//키가 같은지 비교
+		if (strCmp(ht[hashKey].key, key))
+		{
+			printf("일치합니당\n");
+			return;
+		}
+		hashKey = (hashKey + 1) % MOD;
+	}
+	strCpy(ht[hashKey].key, key);
+	strCpy(ht[hashKey].value, value);
+}
+int find(char key[])
+{
+	int res = -1;
+	int count = 100000;
+	int hashedKey = hash(key);
+	while (count-- && ht[hashedKey].key[0] != 0)
+	{
+		//키값이 같은지 확인
+		if (strCmp(ht[hashedKey].key, key))
+		{
+			res = hashedKey;
+		}
+		hashedKey = (hashedKey + 1) % MOD;
+	}
+	return res;
+}
+int main()
+{
+	for (int k = 0; k < 10; k++)
+	{
+		char key[30];
+		char value[30];
+		scanf("%s %s", &key, &value);
+		unsigned int hashedKey = hash(key);
+		add(hashedKey, key, value);
+	}
+	while (1)
+	{
+		int cmd = 0;
+		scanf("%d", &cmd);
+		switch (cmd)
+		{
+		case 1:
+		{
+			char keyStr[20];
+			printf("Clear Nodes Key = ");
+			scanf("%s", &keyStr);
+			int result = find(keyStr);
+			if (result>0)
+			{
+				printf("HashInfo %d -> %s %s\n", result, ht[result].key, ht[result].value);
+				ht[result] = emptyNode;
+				printf("HashInfo %d -> %s %s\n", result, ht[result].key, ht[result].value);
+			}
+			else
+			{
+				printf("No hash Founded\n");
+			}
+			break;
+		}
+		case 2:
+		{
+			//add key
+			char key[30];
+			char value[30];
+			scanf("%s %s", &key, &value);
+			unsigned int hashedKey = hash(key);
+			add(hashedKey, key, value);
+			printf("Add complite\n");
+			break;
+		}
+		case 3:
+		{
+			//modify;
+
+			break;
+		}
+		}
+	}
+}
