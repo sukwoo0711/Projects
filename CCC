@@ -1,0 +1,93 @@
+#include <stdio.h>
+
+typedef struct Thesis_t {
+	int pid;
+	int popular;
+	int timestamp;
+}thesis_t;
+typedef struct Professor {
+	int profArray[1001];
+	int profIndex;
+}prof;
+struct InputT {
+	int tid;
+	int order;
+};
+InputT input[1001];		
+thesis_t thesisDB[100000];
+prof profDB[1001];
+int NN;
+int CurrentTid;
+int InsertSort(int tid, int prio);
+void init(int N) {
+	NN = N;		//총 교수 수
+	CurrentTid = 0;
+	for (int i = 0; i <= NN; i++)
+		profDB[i].profIndex = 0;
+}
+
+void interest(int mId1, int mId2, int timestamp) {
+	profDB[mId1].profArray[++profDB[mId1].profIndex] = mId2;
+}
+
+void publishThesis(int pId, int tId, int timestamp) {
+	thesisDB[tId].pid = pId;
+	thesisDB[tId].timestamp = timestamp;
+	thesisDB[tId].popular = 0;
+	CurrentTid = tId;
+}
+
+void quotation(int tId, int timestamp) {
+	thesisDB[tId].popular++;
+}
+
+void getTop(int pId, int timestamp, int tIdList[]) {
+	register int i, cnt = 0;
+	int visit[1001] = { 0, };
+	for (int i = 0; i < 11; i++)
+		input[i].tid = input[i].order = 0;
+	visit[pId] = 1;
+	for (i = 1; i <= profDB[pId].profIndex; i++)
+	{
+		visit[profDB[pId].profArray[i]] = 1;	//pId교수가 follow하는 교수들의 visit을 1로 채워줌
+	}
+	for (i = CurrentTid; i >= 0; i--)
+	{
+		if (timestamp - 1000 > thesisDB[i].timestamp)
+			break;
+		if (visit[thesisDB[i].pid] == 1)
+		{
+			int prio = thesisDB[i].popular * 10000 + thesisDB[i].timestamp;
+			//input[cnt++] = { i,prio };
+			cnt+=InsertSort(i, prio);
+		}
+	}
+	while (cnt < 10)
+	{
+		if (i <= 0)
+			break;
+		if (visit[thesisDB[i].pid] == 1)
+			cnt+=InsertSort(i, thesisDB[i].timestamp);
+		i--;
+	}
+	for (int i = 0; i < 10; i++)
+		tIdList[i] = input[i].tid;
+}
+inline int InsertSort(int tid, int prio)
+{
+	int i = 0;
+	int p = 0;
+	for (i = 0; i < 12; i++)
+	{
+		if (input[i].order < prio)
+			break;
+	}
+	if (i == 11)
+		return 0;
+	for (int j = 12; j >= i; j--)
+	{
+		input[j] = input[j - 1];
+	}
+	input[i] = { tid,prio };
+	return 1;
+}
